@@ -10,23 +10,24 @@ import (
 type Grammar struct {
 	// The rules of the grammar. For example:
 	//
-	// S  -> NP | NV
+	// S  -> NP NV | NV
 	//
-	// NP -> 5
+	// NP -> 5 NV
 	//
 	// NV -> P
 	//
 	// P  -> 2
 	//
 	// Then we can check the initial state to start parsing.
-	Rules   map[string][]string
-	Initial string
+	Productions map[string][][]string
+	Initial     string
+	Terminals   map[string]struct{}
 }
 
 func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
-	rules := make(map[string][]string)
+	rules := make(map[string][][]string)
 
 	fmt.Println("Hello! Please input your CFG rules:")
 
@@ -51,19 +52,44 @@ func main() {
 		_, hasKey := rules[first]
 
 		if !hasKey {
-			rules[first] = []string{}
+			rules[first] = [][]string{}
 		}
 
-		states := strings.Split(rest, "|")
-		for _, state := range states {
-			trimmed := strings.TrimSpace(state)
-			rules[first] = append(rules[first], trimmed)
+		transitions := strings.Split(rest, "|")
+		for _, transition := range transitions {
+			trimmed := strings.TrimSpace(transition)
+			states := strings.Split(trimmed, " ")
+			rules[first] = append(rules[first], states)
 			fmt.Fprintln(os.Stdout, "Adding rule:", first, "->", trimmed)
+		}
+	}
+
+	terminals := map[string]struct{}{}
+	for _, transitions := range rules {
+		for _, states := range transitions {
+			for _, state := range states {
+				if _, notTerminal := rules[state]; notTerminal {
+					continue
+				}
+
+				terminals[state] = struct{}{}
+
+			}
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
+
+	grammar := Grammar{
+		Productions: rules,
+		Terminals:   terminals,
+		Initial:     "S",
+	}
+	fmt.Printf("%v\n", grammar)
+
+	chomsky := from_cfg_to_cnf(&grammar)
+	fmt.Printf("%v\n", chomsky)
 
 }
