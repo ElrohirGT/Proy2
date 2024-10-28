@@ -14,16 +14,22 @@ type Grammar struct {
 }
 
 func main() {
+	fmt.Println("\n════════════════════════════════════════")
+	fmt.Println("✨ Bienvenido al Verificador de Frases ✨")
+	fmt.Println("════════════════════════════════════════")
+
 	// Leer la gramática desde el archivo
 	grammarFile := "input.txt"
 	data := readFile(grammarFile)
+
+	fmt.Println("📖  Procesando reglas de la gramática desde el archivo...")
 
 	// Procesar las reglas leídas desde el archivo
 	rules := make(map[string][][]string)
 	for _, line := range data {
 		first, rest, separatorFound := strings.Cut(line, "->")
 		if !separatorFound {
-			fmt.Fprintln(os.Stdout, "Rule", line, "has invalid format! Remember to add ->")
+			fmt.Fprintf(os.Stdout, "⚠️  Regla \"%s\" tiene formato inválido. Recuerda agregar '->'\n", line)
 			continue
 		}
 
@@ -40,7 +46,7 @@ func main() {
 			trimmed := strings.TrimSpace(transition)
 			states := strings.Split(trimmed, " ")
 			rules[first] = append(rules[first], states)
-			fmt.Fprintln(os.Stdout, "Adding rule:", first, "->", trimmed)
+			fmt.Fprintf(os.Stdout, "✅  Agregando regla: %s -> %s\n", first, trimmed)
 		}
 	}
 
@@ -65,10 +71,10 @@ func main() {
 
 	// Convertir la gramática a CNF
 	chomsky := from_cfg_to_cnf(&grammar)
-	fmt.Printf("CNF: %v\n", chomsky)
+	fmt.Printf("🚀 CNF final: %v\n", chomsky)
 
 	// Pedir al usuario que ingrese una frase
-	fmt.Println("Ingrese la frase que desea verificar:")
+	fmt.Println("\n💬 Ingrese la frase que desea verificar:")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	sentence := strings.Split(scanner.Text(), " ")
@@ -76,18 +82,19 @@ func main() {
 	// Aplicar el algoritmo CYK
 	accepted, table := cykParse(chomsky.Productions, sentence)
 	if accepted {
-		fmt.Println("La frase es aceptada.")
+		fmt.Println("✅ La frase es aceptada.")
 		tree := generateParseTree(table, chomsky.Productions, sentence, chomsky.Initial)
 		printTree(tree, 0)
 
 		// Guardar el árbol como un archivo JSON
 		jsonPath := "output/tree.json"
 		if err := saveTreeAsJSON(tree, jsonPath); err != nil {
-			fmt.Printf("Error al guardar el árbol en JSON: %v\n", err)
+			fmt.Printf("⚠️  Error al guardar el árbol en JSON: %v\n", err)
 		} else {
-			fmt.Printf("Árbol guardado correctamente en: %s\n", jsonPath)
+			fmt.Printf("🌳 Árbol guardado correctamente en: %s\n", jsonPath)
 		}
 	} else {
-		fmt.Println("La frase no es aceptada.")
+		fmt.Println("❌ La frase no es aceptada.")
 	}
+	fmt.Println("════════════════════════════════════════")
 }

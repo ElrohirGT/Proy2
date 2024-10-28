@@ -8,21 +8,26 @@ import (
 
 // Converts a Context-Free Grammar into Chomsky Normal Form
 func from_cfg_to_cnf(cfg *Grammar) *Grammar {
-	fmt.Fprintln(os.Stdout, "Removing initial symbol: ", cfg.Initial)
+	fmt.Fprintln(os.Stdout, "\n════════════════════════════════════════")
+	fmt.Fprintln(os.Stdout, "🔄  Convertir CFG a CNF")
+	fmt.Fprintln(os.Stdout, "════════════════════════════════════════")
+	fmt.Fprintf(os.Stdout, "🚀  Removiendo símbolo inicial: %s\n", cfg.Initial)
 	cnf := remove_initial(cfg)
 
-	fmt.Fprintln(os.Stdout, "Binarizando producciones...")
+	fmt.Fprintln(os.Stdout, "🔧  Binarizando producciones...")
 	cnf = binarize_productions(cnf)
 
-	fmt.Fprintln(os.Stdout, "Eliminar producciones epsilon...")
+	fmt.Fprintln(os.Stdout, "🔧  Eliminando producciones epsilon...")
 	cnf = delete_epsilon_productions(cnf)
 
-	fmt.Fprintln(os.Stdout, "Eliminar producciones unitarias...")
+	fmt.Fprintln(os.Stdout, "🔧  Eliminando producciones unitarias...")
 	cnf = delete_unary_productions(cnf)
 
-	fmt.Fprintln(os.Stdout, "Eliminando producciones/símbolos sin uso...")
+	fmt.Fprintln(os.Stdout, "🔧  Eliminando producciones/símbolos sin uso...")
 	cnf = remove_useless_productions(cnf)
 
+	fmt.Fprintln(os.Stdout, "✔️  Conversión a CNF completada.")
+	fmt.Fprintln(os.Stdout, "════════════════════════════════════════")
 	return cnf
 }
 
@@ -162,7 +167,6 @@ func delete_unary_productions(cfg *Grammar) *Grammar {
 	}
 	return cfg
 }
-
 
 // Deletes useless productions from the grammar
 func remove_useless_productions(cfg *Grammar) *Grammar {
