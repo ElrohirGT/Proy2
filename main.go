@@ -8,40 +8,20 @@ import (
 )
 
 type Grammar struct {
-	// The rules of the grammar. For example:
-	//
-	// S  -> NP NV | NV
-	//
-	// NP -> 5 NV
-	//
-	// NV -> P
-	//
-	// P  -> 2
-	//
-	// Then we can check the initial state to start parsing.
 	Productions map[string][][]string
 	Initial     string
 	Terminals   map[string]struct{}
 }
 
 func main() {
+	// Leer la gramática desde el archivo
+	grammarFile := "input.txt"
+	data := readFile(grammarFile)
 
-	scanner := bufio.NewScanner(os.Stdin)
+	// Procesar las reglas leídas desde el archivo
 	rules := make(map[string][][]string)
-
-	fmt.Println("Hello! Please input your CFG rules:")
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		line = strings.TrimSpace(line)
-
-		if line == "" {
-			fmt.Println("Input ended!")
-			break
-		}
-
+	for _, line := range data {
 		first, rest, separatorFound := strings.Cut(line, "->")
-
 		if !separatorFound {
 			fmt.Fprintln(os.Stdout, "Rule", line, "has invalid format! Remember to add ->")
 			continue
@@ -49,8 +29,8 @@ func main() {
 
 		first = strings.TrimSpace(first)
 		rest = strings.TrimSpace(rest)
-		_, hasKey := rules[first]
 
+		_, hasKey := rules[first]
 		if !hasKey {
 			rules[first] = [][]string{}
 		}
@@ -64,6 +44,7 @@ func main() {
 		}
 	}
 
+	// Crear la estructura Grammar
 	terminals := map[string]struct{}{}
 	for _, transitions := range rules {
 		for _, states := range transitions {
@@ -71,25 +52,42 @@ func main() {
 				if _, notTerminal := rules[state]; notTerminal {
 					continue
 				}
-
 				terminals[state] = struct{}{}
-
 			}
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
 	}
 
 	grammar := Grammar{
 		Productions: rules,
 		Terminals:   terminals,
-		Initial:     "S",
+		Initial:     "S", // Simbolo inicial por defecto
 	}
-	fmt.Printf("%v\n", grammar)
 
+	// Convertir la gramática a CNF
 	chomsky := from_cfg_to_cnf(&grammar)
-	fmt.Printf("%v\n", chomsky)
+	fmt.Printf("CNF: %v\n", chomsky)
 
+	// Pedir al usuario que ingrese una frase
+	fmt.Println("Ingrese la frase que desea verificar:")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	sentence := strings.Split(scanner.Text(), " ")
+
+	// Aplicar el algoritmo CYK
+	accepted, table := cykParse(chomsky.Productions, sentence)
+	if accepted {
+		fmt.Println("La frase es aceptada.")
+		tree := generateParseTree(table, chomsky.Productions, sentence, chomsky.Initial)
+		printTree(tree, 0)
+
+		// Guardar el árbol como un archivo JSON
+		jsonPath := "output/tree.json"
+		if err := saveTreeAsJSON(tree, jsonPath); err != nil {
+			fmt.Printf("Error al guardar el árbol en JSON: %v\n", err)
+		} else {
+			fmt.Printf("Árbol guardado correctamente en: %s\n", jsonPath)
+		}
+	} else {
+		fmt.Println("La frase no es aceptada.")
+	}
 }

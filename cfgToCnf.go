@@ -6,9 +6,9 @@ import (
 	"strconv"
 )
 
-// Converts a Context Free Grammar into a Chomsky Normal Form
+// Converts a Context-Free Grammar into Chomsky Normal Form
 func from_cfg_to_cnf(cfg *Grammar) *Grammar {
-	fmt.Fprintln(os.Stdout, "Removing initial simbol: ", cfg.Initial)
+	fmt.Fprintln(os.Stdout, "Removing initial symbol: ", cfg.Initial)
 	cnf := remove_initial(cfg)
 
 	fmt.Fprintln(os.Stdout, "Binarizando producciones...")
@@ -26,6 +26,7 @@ func from_cfg_to_cnf(cfg *Grammar) *Grammar {
 	return cnf
 }
 
+// Adds a new initial symbol to avoid issues with existing productions
 func remove_initial(cfg *Grammar) *Grammar {
 	newInitial := "S'"
 	cfg.Productions[newInitial] = [][]string{{cfg.Initial}}
@@ -33,6 +34,7 @@ func remove_initial(cfg *Grammar) *Grammar {
 	return cfg
 }
 
+// Converts productions into binary form (Chomsky Normal Form)
 func binarize_productions(cfg *Grammar) *Grammar {
 	generator := construct_generator()
 	for startState, transitions := range cfg.Productions {
@@ -78,8 +80,7 @@ func bin_production(cfg *Grammar, generator func() string, transitionStates []st
 	return cfg
 }
 
-// Añade un nuevo estado al CFG.
-// Retorna el nuevo estado añadido.
+// Adds a new state to the grammar and returns the newly created state
 func add_new_state(generator func() string, cfg *Grammar, transitions [][]string) string {
 	state := generator()
 	_, transitionIsNotNew := cfg.Productions[state]
@@ -90,6 +91,7 @@ func add_new_state(generator func() string, cfg *Grammar, transitions [][]string
 	return state
 }
 
+// Generates a unique state name
 func construct_generator() func() string {
 	count := -1
 	return func() string {
@@ -98,6 +100,7 @@ func construct_generator() func() string {
 	}
 }
 
+// Deletes epsilon productions from the grammar
 func delete_epsilon_productions(cfg *Grammar) *Grammar {
 	statesToReplaceByEpsilonTransition := make(map[string][]string)
 
@@ -134,8 +137,8 @@ func delete_epsilon_productions(cfg *Grammar) *Grammar {
 	return cfg
 }
 
+// Deletes unary productions from the grammar
 func delete_unary_productions(cfg *Grammar) *Grammar {
-
 	for originalState, transitions := range cfg.Productions {
 		for _, states := range transitions {
 			if len(states) != 1 {
@@ -147,14 +150,21 @@ func delete_unary_productions(cfg *Grammar) *Grammar {
 				continue
 			}
 
+			// Asegúrate de que la eliminación de producciones unitarias no elimine las reglas principales
 			relatedStates := cfg.Productions[unaryState]
-			cfg.Productions[originalState] = append(cfg.Productions[originalState][1:], relatedStates...)
+			for _, transition := range relatedStates {
+				if len(transition) == 1 && transition[0] == originalState {
+					continue
+				}
+				cfg.Productions[originalState] = append(cfg.Productions[originalState], transition)
+			}
 		}
 	}
-
 	return cfg
 }
 
+
+// Deletes useless productions from the grammar
 func remove_useless_productions(cfg *Grammar) *Grammar {
 	usedStates := map[string]struct{}{
 		"S'": {},
